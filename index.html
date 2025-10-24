@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cebu City Weather</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+      text-align: center;
+    }
+
+    header img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+    }
+
+    h1 {
+      font-size: 1.8em;
+      margin-top: 15px;
+    }
+
+    .current-weather {
+      margin: 20px 0;
+    }
+
+    .temp {
+      font-size: 3em;
+      font-weight: bold;
+    }
+
+    .description {
+      text-transform: capitalize;
+      font-size: 1.2em;
+      color: #666;
+    }
+
+    .forecast {
+      max-width: 720px;
+      margin: 30px auto;
+      background: #c5c5c5;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 10px 0 20px;
+    }
+
+    h2 {
+      text-align: left;
+      padding-left: 30px;
+      font-size: 1.2em;
+      color: #333;
+    }
+
+    table {
+      width: 90%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 14px 10px;
+      border-bottom: 1px solid #000000;
+    }
+
+    th {
+      background: #bcb8b8;
+      font-weight: bold;
+      text-align: center;
+      font-size: 0.95em;
+    }
+
+    td {
+      vertical-align: middle;
+      font-size: 0.95em;
+    }
+
+    td:first-child {
+      text-align: left;
+      width: 40%;
+    }
+
+    td:nth-child(2) {
+      text-align: center;
+      width: 15%;
+      font-size: 1.5em;
+    }
+
+    td:nth-child(3) {
+      text-align: center;
+      width: 20%;
+    }
+
+    td:nth-child(4) {
+      text-align: left;
+      color: #555;
+      width: 25%;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    @media (max-width: 600px) {
+      table, th, td {
+        font-size: 0.9em;
+      }
+      td:nth-child(2) {
+        font-size: 1.3em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="Sky" />
+  </header>
+
+  <h1>☀️ Cebu City Weather</h1>
+
+  <div class="current-weather">
+    <div class="temp" id="temp">--°C</div>
+    <div class="description" id="description">Loading...</div>
+  </div>
+
+  <div class="forecast">
+    <h2>5-Day Forecast</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Day & Date</th>
+          <th>Weather</th>
+          <th>High/Low</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="forecast-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const latitude = 10.3157;
+    const longitude = 123.8854;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+
+    const weatherCodes = {
+      0: { desc: "Clear sky", icon: "☀️" },
+      1: { desc: "Mainly clear", icon: "🌤️" },
+      2: { desc: "Partly cloudy", icon: "⛅" },
+      3: { desc: "Overcast", icon: "☁️" },
+      45: { desc: "Foggy", icon: "🌫️" },
+      48: { desc: "Rime fog", icon: "🌫️" },
+      51: { desc: "Light drizzle", icon: "🌦️" },
+      53: { desc: "Moderate drizzle", icon: "🌦️" },
+      55: { desc: "Dense drizzle", icon: "🌧️" },
+      61: { desc: "Light rain", icon: "🌧️" },
+      63: { desc: "Moderate rain", icon: "🌧️" },
+      65: { desc: "Heavy rain", icon: "🌧️" },
+      71: { desc: "Snow fall", icon: "🌨️" },
+      80: { desc: "Rain showers", icon: "🌦️" },
+      95: { desc: "Thunderstorm", icon: "⛈️" },
+      99: { desc: "Severe thunderstorm", icon: "🌩️" },
+    };
+
+    async function getWeather() {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const current = data.current_weather;
+        const currentCode = weatherCodes[current.weathercode] || { desc: "Unknown", icon: "❓" };
+        document.getElementById("temp").textContent = `${Math.round(current.temperature)}°C`;
+        document.getElementById("description").textContent = currentCode.desc;
+
+        const days = data.daily.time;
+        const maxTemps = data.daily.temperature_2m_max;
+        const minTemps = data.daily.temperature_2m_min;
+        const codes = data.daily.weathercode;
+
+        const forecastBody = document.getElementById("forecast-body");
+        forecastBody.innerHTML = "";
+
+        for (let i = 0; i < 5; i++) {
+          const date = new Date(days[i]);
+          const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+          const fullDate = date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+          const code = weatherCodes[codes[i]] || { desc: "Unknown", icon: "❓" };
+
+          const row = `
+            <tr>
+              <td>${dayName}, ${fullDate}</td>
+              <td>${code.icon}</td>
+              <td>${Math.round(maxTemps[i])}°C / ${Math.round(minTemps[i])}°C</td>
+              <td>${code.desc}</td>
+            </tr>
+          `;
+          forecastBody.insertAdjacentHTML("beforeend", row);
+        }
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("description").textContent = "Failed to load data";
+      }
+    }
+
+    getWeather();
+  </script>
+
+</body>
+</html>
